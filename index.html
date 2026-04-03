@@ -105,7 +105,7 @@ td{padding:7px 11px;vertical-align:middle;}
 .tag{display:inline-block;padding:2px 7px;border-radius:12px;font-size:10px;font-weight:600;}
 .amount-pesos{color:var(--accent);font-family:'DM Mono',monospace;}
 .amount-usd{color:var(--accent2);font-family:'DM Mono',monospace;}
-.amount-cred{color:var(--accent3);font-family:'DM Mono',monospace;}
+.amount-cred{color:var(--accent3);font-family:'DM Mono',monospace;white-space:nowrap;}
 .amount-neg{color:#ef5555;font-family:'DM Mono',monospace;}
 .cuota-badge{background:#3a3a55;border:1px solid #6a6a90;border-radius:4px;padding:2px 7px;font-size:10px;color:#d0d0f0;font-family:'DM Mono',monospace;font-weight:600;}
 .results-count{padding:7px 15px;font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg);}
@@ -321,7 +321,6 @@ body.light thead tr{background:#eaecf2;}
     <div class="table-wrap" id="viewDetalle">
       <table>
         <thead><tr>
-          <th onclick="sortBy('banco')">Fuente <span class="sa">↕</span></th>
           <th onclick="sortBy('tarjeta')">Tarjeta <span class="sa">↕</span></th>
           <th onclick="sortBy('persona')">Persona <span class="sa">↕</span></th>
           <th onclick="sortBy('mes_resumen')">Resumen <span class="sa">↕</span></th>
@@ -607,7 +606,7 @@ function openCatDropdown(e,row,src){
 // ── RENDER TABLE ───────────────────────────────────────────────────────────────
 function renderTable(rows){
   const tbody=document.getElementById('tableBody');
-  if(!rows.length){tbody.innerHTML=`<tr><td colspan="11"><div class="no-results"><div class="no-results-icon">🔍</div>Sin resultados</div></td></tr>`;return;}
+  if(!rows.length){tbody.innerHTML=`<tr><td colspan="10"><div class="no-results"><div class="no-results-icon">🔍</div>Sin resultados</div></td></tr>`;return;}
   tbody.innerHTML=rows.map(d=>{
     const isBank=d.source==='banco';
     const dotCls=isBank?'bank-cuenta':(d.banco==='Galicia'?'bank-galicia':'bank-bbva');
@@ -616,8 +615,7 @@ function renderTable(rows){
     const creditCell=isBank&&d.credito?`<span class="amount-cred">${fmtP(d.credito)}</span>`:'';
     const usdCell=d.usd?`<span class="amount-usd">${fmtU(d.usd)}</span>`:'';
     return `<tr class="${isBank?'bank-row':''}">
-      <td><span class="bank-dot ${dotCls}"></span><b>${isBank?'Cuenta':d.banco}</b></td>
-      <td>${d.tarjeta}</td>
+      <td><span class="bank-dot ${dotCls}"></span>${d.tarjeta}</td>
       <td>${(d.persona||'').split(' ')[0]}</td>
       <td style="font-family:'DM Mono',monospace;font-size:10px;color:var(--accent);font-weight:600">${fmtMes(d.mes_resumen)}</td>
       <td style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text);opacity:.7">${d.fecha}</td>
