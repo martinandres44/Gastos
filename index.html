@@ -258,9 +258,10 @@ body.light thead tr{background:#eaecf2;}
         <div class="pill active" data-val="all">Todas</div>
         <div class="pill" data-val="MARTIN ANDRES">Martin</div>
         <div class="pill" data-val="FLOR YORIO">Flor</div>
-        <div class="pill" data-val="TOMAS ANDRES">Tomas</div>
-        <div class="pill" data-val="MARIA DEL ANDRES">Maria</div>
+        <div class="pill" data-val="TOMAS ANDRES">Tomy</div>
+        <div class="pill" data-val="MARIA DEL ANDRES">Pili</div>
         <div class="pill" data-val="ANA ANDRES" title="Solo informativo — no incluida en Todas" style="border-style:dashed;opacity:.7">Ana</div>
+        <div class="pill" data-val="MAMA" title="Solo informativo — no incluida en Todas" style="border-style:dashed;opacity:.7">Mamá</div>
       </div>
     </div>
     <div>
@@ -506,7 +507,7 @@ function getFiltered(){
     if(filters.banco!=='all'&&d.banco!==filters.banco) return false;
     if(filters.tarjeta!=='all'&&d.tarjeta!==filters.tarjeta) return false;
     // Ana excluded when no explicit persona selected — must click Ana pill to see her
-    if(filters.personas.length===0&&d.persona==='ANA ANDRES') return false;
+    if(filters.personas.length===0&&(d.persona==='ANA ANDRES'||d.persona==='MAMA')) return false;
     if(filters.personas.length>0&&!filters.personas.includes(d.persona)) return false;
     if(filters.cat!=='all'&&d.categoria!==filters.cat) return false;
     if(filters.moneda==='pesos'&&(d.pesos||0)<=0) return false;
