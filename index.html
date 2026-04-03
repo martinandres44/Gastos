@@ -192,6 +192,13 @@ body.light #catDropdown{background:#fff;border-color:#dde0e8;box-shadow:0 8px 32
 body.light tbody tr:hover{background:#eef0f6;}
 body.light thead tr{background:#eaecf2;}
 
+.cb-label{display:flex;align-items:center;gap:8px;cursor:pointer;padding:4px 6px;border-radius:6px;transition:background .12s;color:var(--text);opacity:.7;font-size:11px;}
+.cb-label:hover{background:var(--card);opacity:1;}
+.cb-label input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;}
+.cb-label.cb-all{font-weight:700;opacity:1;border-bottom:1px solid var(--border);padding-bottom:7px;margin-bottom:1px;}
+.cb-label.cb-info{opacity:.5;border-left:none;padding-left:6px;}
+.cb-label.cb-info:has(input:checked){opacity:.8;}
+.cb-label:has(input:checked){opacity:1;}
 .no-results{text-align:center;padding:60px;color:var(--muted);}
 .no-results-icon{font-size:36px;margin-bottom:10px;}
 </style>
@@ -254,15 +261,18 @@ body.light thead tr{background:#eaecf2;}
       </div>
     </div>
     <div>
-      <div class="filter-title">Persona <span style="font-size:9px;opacity:.6">(multi)</span></div>
-      <div class="pill-group" id="filterPersona">
-        <div class="pill active" data-val="all">Todas</div>
-        <div class="pill" data-val="MARTIN ANDRES">Martin</div>
-        <div class="pill" data-val="FLOR YORIO">Flor</div>
-        <div class="pill" data-val="TOMAS ANDRES">Tomy</div>
-        <div class="pill" data-val="MARIA DEL ANDRES">Pili</div>
-        <div class="pill" data-val="ANA ANDRES" title="Solo informativo — no incluida en Todas" style="border-style:dashed;opacity:.7">Anita</div>
-        <div class="pill" data-val="MAMA" title="Solo informativo — no incluida en Todas" style="border-style:dashed;opacity:.7">Mamá</div>
+      <div class="filter-title">Persona</div>
+      <div id="filterPersona" style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:4px;">
+        <label class="cb-label cb-all" style="grid-column:1/-1">
+          <input type="checkbox" id="cbAll" checked onchange="handleCbAll(this)">
+          <span>Todas</span>
+        </label>
+        <label class="cb-label"><input type="checkbox" class="cb-persona" value="MARTIN ANDRES" onchange="handleCb()"><span>Martin</span></label>
+        <label class="cb-label"><input type="checkbox" class="cb-persona" value="FLOR YORIO" onchange="handleCb()"><span>Flor</span></label>
+        <label class="cb-label"><input type="checkbox" class="cb-persona" value="TOMAS ANDRES" onchange="handleCb()"><span>Tomy</span></label>
+        <label class="cb-label"><input type="checkbox" class="cb-persona" value="MARIA DEL ANDRES" onchange="handleCb()"><span>Pili</span></label>
+        <label class="cb-label cb-info" title="Solo informativo — no incluida en Todas"><input type="checkbox" class="cb-persona" value="ANA ANDRES" onchange="handleCb()"><span>Anita <span style="font-size:9px;opacity:.5">ℹ</span></span></label>
+        <label class="cb-label cb-info" title="Solo informativo — no incluida en Todas"><input type="checkbox" class="cb-persona" value="MAMA" onchange="handleCb()"><span>Mamá <span style="font-size:9px;opacity:.5">ℹ</span></span></label>
       </div>
     </div>
     <div>
@@ -466,24 +476,26 @@ function buildMesFilter(){
   });
 });
 
-// ── PERSONA MULTI-SELECT ───────────────────────────────────────────────────────
-const personaGroup=document.getElementById('filterPersona');
-personaGroup.querySelectorAll('.pill').forEach(p=>{
-  p.onclick=()=>{
-    const val=p.dataset.val;
-    if(val==='all'){
-      filters.personas=[];
-      personaGroup.querySelectorAll('.pill').forEach(x=>{x.classList.toggle('active',x.dataset.val==='all');x.classList.remove('multi');});
-    } else {
-      const idx=filters.personas.indexOf(val);
-      if(idx>=0) filters.personas.splice(idx,1); else filters.personas.push(val);
-      personaGroup.querySelector('[data-val="all"]').classList.toggle('active',filters.personas.length===0);
-      p.classList.toggle('active',filters.personas.includes(val));
-      p.classList.toggle('multi',filters.personas.length>1&&filters.personas.includes(val));
-    }
-    render();
-  };
-});
+// ── PERSONA CHECKBOXES ────────────────────────────────────────────────────────
+function handleCbAll(cb) {
+  // When "Todas" checked: uncheck all individuals
+  // When unchecked: do nothing (can't uncheck all without selecting someone)
+  if (cb.checked) {
+    document.querySelectorAll('.cb-persona').forEach(c => c.checked = false);
+    filters.personas = [];
+  } else {
+    cb.checked = true; // keep it checked if nothing else selected
+  }
+  render();
+}
+
+function handleCb() {
+  const checked = [...document.querySelectorAll('.cb-persona:checked')].map(c => c.value);
+  filters.personas = checked;
+  // Sync "Todas" checkbox
+  document.getElementById('cbAll').checked = checked.length === 0;
+  render();
+}
 
 document.getElementById('searchBox').addEventListener('input',e=>{search=e.target.value.toLowerCase();render();});
 
@@ -491,6 +503,8 @@ function resetFilters(){
   filters={fuente:'all',banco:'all',tarjeta:'all',personas:[],cat:'all',moneda:'all',cuota:'all',mes:'all'};
   search='';document.getElementById('searchBox').value='';
   document.querySelectorAll('.pill').forEach(p=>{p.classList.toggle('active',p.dataset.val==='all');p.classList.remove('multi');});
+  document.querySelectorAll('.cb-persona').forEach(c=>c.checked=false);
+  const cbAll=document.getElementById('cbAll');if(cbAll)cbAll.checked=true;
   render();
 }
 
