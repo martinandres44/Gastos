@@ -531,7 +531,16 @@ function getFiltered(){
     if(filters.mes!=='all'&&fmtMes(d.mes_resumen)!==filters.mes) return false;
     if(search&&!d.descripcion.toLowerCase().includes(search)&&!d.persona.toLowerCase().includes(search)&&!d.categoria.toLowerCase().includes(search)) return false;
     return true;
-  }).sort((a,b)=>{const av=a[sortField]??'',bv=b[sortField]??'';return(typeof av==='number'?(av-bv):String(av).localeCompare(String(bv)))*sortDir;});
+  }).sort((a,b)=>{
+    const av=a[sortField]??'', bv=b[sortField]??'';
+    if(typeof av==='number') return (av-bv)*sortDir;
+    // Parse DD-MM-YY dates for proper chronological sort
+    if(sortField==='fecha'){
+      const toDate=s=>{ const p=s.split('-'); return p.length===3?new Date(2000+parseInt(p[2]),parseInt(p[1])-1,parseInt(p[0])):new Date(0); };
+      return (toDate(av)-toDate(bv))*sortDir;
+    }
+    return String(av).localeCompare(String(bv))*sortDir;
+  });
 }
 
 // ── FORMAT ─────────────────────────────────────────────────────────────────────
