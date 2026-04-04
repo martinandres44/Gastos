@@ -12,11 +12,12 @@
 :root {
   --bg:#0f0f13; --surface:#17171e; --card:#1e1e28; --border:#2a2a38;
   --accent:#f5a623; --accent2:#4f8ef7; --accent3:#2dd4a0;
-  --galicia:#ff6b35; --bbva:#4f8ef7;
+  --galicia:#ff6b35; --bbva:#4f8ef7; --bna:#009b77;
   --text:#f0f0f5; --muted:#6b6b85; --pill:#252535;
   --sidebar-w:232px;
 }
 body.light {
+  --bna:#007a5e;
   --bg:#f4f5f7; --surface:#ffffff; --card:#f0f1f5; --border:#dde0e8;
   --text:#1a1a2e; --muted:#888aa0; --pill:#e8eaf0;
   --accent:#d4860a; --accent2:#2563eb; --accent3:#0d9669;
@@ -64,6 +65,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .pill.active{background:var(--accent);border-color:var(--accent);color:#000;font-weight:700;opacity:1;}
 .pill.active.multi{background:var(--accent2);border-color:var(--accent2);color:#fff;}
 .pill.galicia-pill.active{background:var(--galicia);border-color:var(--galicia);}
+.pill.bna-pill.active{background:var(--bna);border-color:var(--bna);color:#fff;}
 .pill.bbva-pill.active{background:var(--bbva);border-color:var(--bbva);color:#fff;}
 .reset-btn{width:100%;background:transparent;border:1px dashed var(--border);border-radius:8px;padding:7px;color:var(--muted);font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;}
 .reset-btn:hover{border-color:var(--accent);color:var(--accent);}
@@ -103,7 +105,7 @@ tbody tr:hover{background:var(--card);}
 tbody tr.bank-row td:first-child{border-left:3px solid var(--accent3);}
 td{padding:7px 11px;vertical-align:middle;}
 .bank-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:5px;}
-.bank-galicia{background:var(--galicia);}.bank-bbva{background:var(--bbva);}.bank-cuenta{background:var(--accent3);}
+.bank-galicia{background:var(--galicia);}.bank-bbva{background:var(--bbva);}.bank-bna{background:var(--bna);}.bank-cuenta{background:var(--accent3);}
 .tag{display:inline-block;padding:2px 7px;border-radius:12px;font-size:10px;font-weight:600;}
 .amount-pesos{color:var(--accent);font-family:'DM Mono',monospace;}
 .amount-usd{color:var(--accent2);font-family:'DM Mono',monospace;}
@@ -248,6 +250,7 @@ body.light thead tr{background:#eaecf2;}
         <div class="pill active galicia-pill" data-val="all">Todos</div>
         <div class="pill galicia-pill" data-val="Galicia">Galicia</div>
         <div class="pill bbva-pill" data-val="BBVA">BBVA</div>
+        <div class="pill bna-pill" data-val="BNA">BNA</div>
       </div>
     </div>
     <div>
@@ -520,7 +523,8 @@ function sortBy(f){if(sortField===f)sortDir*=-1;else{sortField=f;sortDir=f==='fe
 function getFiltered(){
   return DATA.filter(d=>{
     if(filters.fuente!=='all'&&d.source!==filters.fuente) return false;
-    if(filters.banco!=='all'&&d.banco!==filters.banco) return false;
+    const dBanco=d.banco&&d.banco.includes('BNA')?'BNA':d.banco;
+    if(filters.banco!=='all'&&dBanco!==filters.banco) return false;
     if(filters.tarjeta!=='all'&&d.tarjeta!==filters.tarjeta) return false;
     // Ana excluded when no explicit persona selected — must click Ana pill to see her
     if(filters.personas.length===0&&(d.persona==='ANA ANDRES'||d.persona==='MAMA')) return false;
@@ -620,7 +624,8 @@ function renderTable(rows){
   if(!rows.length){tbody.innerHTML=`<tr><td colspan="10"><div class="no-results"><div class="no-results-icon">🔍</div>Sin resultados</div></td></tr>`;return;}
   tbody.innerHTML=rows.map(d=>{
     const isBank=d.source==='banco';
-    const dotCls=isBank?'bank-cuenta':(d.banco==='Galicia'?'bank-galicia':'bank-bbva');
+    const bk=d.banco&&d.banco.includes('BNA')?'BNA':d.banco;
+const dotCls=isBank?'bank-cuenta':(bk==='Galicia'?'bank-galicia':bk==='BNA'?'bank-bna':'bank-bbva');
     const cuotaVal=d.cuota&&/\d+\/\d+/.test(d.cuota)?d.cuota:'';
     const debitCell=isBank&&d.debito?`<span class="amount-neg">${fmtP(d.debito)}</span>`:(!isBank&&d.pesos?`<span class="${d.pesos<0?'amount-neg':'amount-pesos'}">${fmtP(Math.abs(d.pesos))}</span>`:'');
     const creditCell=isBank&&d.credito?`<span class="amount-cred">${fmtP(d.credito)}</span>`:'';
@@ -660,8 +665,8 @@ function renderSummaryTarjeta(rows){
   const groups={};
   rows.forEach(d=>{const k=d.tarjeta;groups[k]=groups[k]||{pesos:0,usd:0,cred:0,n:0,banco:d.banco,tipo:d.tipo,source:d.source};groups[k].pesos+=d.pesos||0;groups[k].usd+=d.usd||0;groups[k].cred+=d.credito||0;groups[k].n++;});
   const maxP=Math.max(...Object.values(groups).map(g=>g.pesos),1);
-  const dc=v=>v.source==='banco'?'bank-cuenta':(v.banco==='Galicia'?'bank-galicia':'bank-bbva');
-  const col=v=>v.source==='banco'?'var(--accent3)':(v.banco==='Galicia'?'var(--galicia)':'var(--accent2)');
+  const dc=v=>v.source==='banco'?'bank-cuenta':(v.banco==='Galicia'?'bank-galicia':(v.banco&&v.banco.includes('BNA'))?'bank-bna':'bank-bbva');
+  const col=v=>v.source==='banco'?'var(--accent3)':(v.banco==='Galicia'?'var(--galicia)':(v.banco&&v.banco.includes('BNA'))?'var(--bna)':'var(--accent2)');
   el.querySelector('.summary-grid').innerHTML=Object.entries(groups).sort((a,b)=>b[1].pesos-a[1].pesos).map(([key,v])=>`
     <div class="summary-card">
       <div class="sc-header"><div class="sc-title" style="display:flex;align-items:center;gap:7px"><span class="bank-dot ${dc(v)}" style="width:9px;height:9px"></span>${key}</div><div class="sc-count">${v.n} ops</div></div>
@@ -701,14 +706,14 @@ function renderCharts(filtered){
 
   // ── Por Banco ──
   const bancoMap={};
-  filtered.forEach(d=>{const k=d.banco||'Otros';bancoMap[k]=(bancoMap[k]||0)+(d.pesos||0)-(d.credito||0);});
+  filtered.forEach(d=>{const k=(d.banco&&d.banco.includes('BNA'))?'BNA':(d.banco||'Otros');bancoMap[k]=(bancoMap[k]||0)+(d.pesos||0)-(d.credito||0);});
   const bancoEntries=Object.entries(bancoMap).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
   destroyChart('banco');
   chartInstances['banco']=new Chart(document.getElementById('chartBanco').getContext('2d'),{
     type:'doughnut',
     data:{
       labels:bancoEntries.map(([k])=>k),
-      datasets:[{data:bancoEntries.map(([,v])=>v),backgroundColor:['#ff6b35','#4f8ef7','#2dd4a0'],borderColor:theme.bgColor,borderWidth:3,hoverOffset:6}]
+      datasets:[{data:bancoEntries.map(([,v])=>v),backgroundColor:['#ff6b35','#4f8ef7','#009b77','#2dd4a0'],borderColor:theme.bgColor,borderWidth:3,hoverOffset:6}]
     },
     options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{...pluginLegend,position:'right'},tooltip:{callbacks:{label:ctx=>` ${ctx.label}: $${ctx.raw.toLocaleString('es-AR',{maximumFractionDigits:0})}`}}}}
   });
@@ -717,7 +722,7 @@ function renderCharts(filtered){
   const tarjMap={};
   filtered.forEach(d=>{const k=d.tarjeta||'Otros';tarjMap[k]=(tarjMap[k]||0)+(d.pesos||0)-(d.credito||0);});
   const tarjEntries=Object.entries(tarjMap).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
-  const tarjColors=tarjEntries.map(([k])=>k.includes('Galicia')||k==='Cuenta'?'#ff6b35':k.includes('BBVA')?'#4f8ef7':'#2dd4a0');
+  const tarjColors=tarjEntries.map(([k])=>k.includes('Galicia')||k==='Cuenta'?'#ff6b35':k.includes('BBVA')?'#4f8ef7':(k.includes('BNA')||k==='MC BNA')?'#009b77':'#2dd4a0');
   destroyChart('tarjeta_chart');
   chartInstances['tarjeta_chart']=new Chart(document.getElementById('chartTarjeta').getContext('2d'),{
     type:'bar',
