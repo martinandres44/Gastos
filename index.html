@@ -560,7 +560,7 @@ function catClass(cat){return 'cat-'+(cat||'').replace('/','').replace(/ /g,'');
 // ── RENDER ─────────────────────────────────────────────────────────────────────
 function render(){
   const filtered=getFiltered();
-  const totalP=filtered.reduce((s,d)=>s+(d.pesos||0),0);
+  const totalP=filtered.reduce((s,d)=>s+(d.pesos||0)-(d.credito||0),0);
   const totalU=filtered.reduce((s,d)=>s+(d.usd||0),0);
   const totalCred=filtered.reduce((s,d)=>s+(d.credito||0),0);
   document.getElementById('kpiPesos').textContent=fmtShort(totalP);
