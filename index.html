@@ -40,14 +40,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .header h1{font-family:'Syne',sans-serif;font-weight:800;font-size:17px;letter-spacing:-.5px;}
 .header-sub{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);}
 .header-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
-.header-mes{display:flex;align-items:center;justify-content:center;position:relative;}
-#mesDropBtn{background:var(--accent);color:#000;border:none;border-radius:20px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Mono',monospace;outline:none;display:flex;align-items:center;gap:5px;}
-#mesDropBtn:hover{opacity:.85;}
-#mesDropPanel{display:none;position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:6px;min-width:130px;box-shadow:0 8px 24px rgba(0,0,0,.3);z-index:200;}
-#mesDropPanel.open{display:block;}
-.mes-cb-label{display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:6px;cursor:pointer;font-size:11px;font-family:'DM Mono',monospace;color:var(--text);transition:background .1s;white-space:nowrap;}
-.mes-cb-label:hover{background:var(--card);}
-.mes-cb-label input{accent-color:var(--accent);width:13px;height:13px;cursor:pointer;}
+.header-mes{display:flex;align-items:center;justify-content:center;}
+#mesDrop{background:var(--accent);color:#000;border:none;border-radius:20px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Mono',monospace;outline:none;appearance:none;-webkit-appearance:none;}
 .period-badge{background:var(--pill);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;}
 .hbtn{background:transparent;border:1px solid var(--border);border-radius:8px;padding:5px 12px;color:var(--muted);font-size:11px;cursor:pointer;font-family:'DM Mono',monospace;transition:all .15s;display:flex;align-items:center;gap:5px;}
 .hbtn:hover{border-color:var(--accent3);color:var(--accent3);}
@@ -256,12 +250,7 @@ body.light thead tr{background:#eaecf2;}
     <h1>💳 Gastos</h1>
     <span class="header-sub" id="headerSub">MARTIN ANDRES</span>
   </div>
-  <div class="header-mes">
-    <button id="mesDropBtn" onclick="toggleMesPanel(event)">
-      <span id="mesDropLabel">Todos los meses</span> ▾
-    </button>
-    <div id="mesDropPanel"></div>
-  </div>
+  <div class="header-mes"><select id="mesDrop" onchange="setMesFromDrop(this.value)"><option value="all">Todos</option></select></div>
   <div class="header-right">
     <span class="sync" id="syncStatus"></span>
     <button class="hbtn excel-btn" onclick="exportToExcel()" title="Descargar vista actual como Excel">⬇ Excel</button>
@@ -496,7 +485,7 @@ function toggleSidebar() {
 
 // ── STATE ──────────────────────────────────────────────────────────────────────
 let DATA = [];
-let filters = { fuente:'all', banco:'all', tarjeta:'all', personas:[], cat:'all', moneda:'all', cuota:'all', mes:'all', meses:[] };
+let filters = { fuente:'all', banco:'all', tarjeta:'all', personas:[], cat:'all', moneda:'all', cuota:'all', mes:'all' };
 let search = '', sortField = 'fecha', sortDir = -1, currentView = 'detalle';
 
 // ── LOAD DATA ──────────────────────────────────────────────────────────────────
@@ -548,78 +537,33 @@ function buildCategoryFilter(){
   });
 }
 
-let ALL_MESES = [];
-
 function buildMesFilter(){
   const MORD=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  ALL_MESES=[...new Set(DATA.map(d=>fmtMes(d.mes_resumen)).filter(Boolean))].sort((a,b)=>{
+  const all=[...new Set(DATA.map(d=>fmtMes(d.mes_resumen)).filter(Boolean))].sort((a,b)=>{
     const [ma,ya]=a.split('-'),[mb,yb]=b.split('-');
     return(parseInt(ya)-parseInt(yb))||(MORD.indexOf(ma)-MORD.indexOf(mb));
   });
-  buildMesPanel();
-  buildMesSidebarPills();
-  updateMesLabel();
-}
-
-function buildMesPanel(){
-  const panel=document.getElementById('mesDropPanel');
-  if(!panel) return;
-  const meses = filters.meses || [];
-  panel.innerHTML = `
-    <label class="mes-cb-label">
-      <input type="checkbox" id="cbMesAll" ${meses.length===0?'checked':''} onchange="handleMesAll(this)"> Todos
-    </label>
-    <div style="border-top:1px solid var(--border);margin:4px 0"></div>
-    ${ALL_MESES.map(m=>`
-      <label class="mes-cb-label">
-        <input type="checkbox" class="cb-mes" value="${m}" ${meses.includes(m)?'checked':''} onchange="handleMesCb()"> ${m}
-      </label>`).join('')}`;
-}
-
-function buildMesSidebarPills(){
-  const meses = filters.meses || [];
+  // Populate dropdown
+  const drop=document.getElementById('mesDrop');
+  drop.innerHTML='<option value="all">Todos</option>'+all.map(m=>`<option value="${m}"${filters.mes===m?' selected':''}>${m}</option>`).join('');
+  // Populate sidebar pills
   mesGroup.innerHTML='';
-  ['all',...ALL_MESES].forEach(mes=>{
+  ['all',...all].forEach(mes=>{
     const p=document.createElement('div');
-    const isActive = mes==='all' ? meses.length===0 : meses.includes(mes);
-    p.className='pill'+(isActive?' active':'');
+    p.className='pill'+(filters.mes===mes?' active':'');
     p.dataset.val=mes; p.textContent=mes==='all'?'Todos':mes;
-    p.onclick=()=>{
-      if(mes==='all'){ filters.meses=[]; }
-      else {
-        const idx=filters.meses.indexOf(mes);
-        if(idx>=0) filters.meses.splice(idx,1); else filters.meses.push(mes);
-      }
-      buildMesPanel(); buildMesSidebarPills(); updateMesLabel(); render();
-    };
+    p.onclick=()=>setMesFromDrop(mes);
     mesGroup.appendChild(p);
   });
 }
 
-function handleMesAll(cb){
-  if(cb.checked){ filters.meses=[]; buildMesPanel(); buildMesSidebarPills(); updateMesLabel(); render(); }
-  else cb.checked=true;
+function setMesFromDrop(mes){
+  filters.mes=mes;
+  const drop=document.getElementById('mesDrop');
+  if(drop) drop.value=mes;
+  mesGroup.querySelectorAll('.pill').forEach(x=>x.classList.toggle('active',x.dataset.val===mes));
+  render();
 }
-
-function handleMesCb(){
-  const checked=[...document.querySelectorAll('.cb-mes:checked')].map(c=>c.value);
-  filters.meses=checked;
-  document.getElementById('cbMesAll').checked=checked.length===0;
-  buildMesSidebarPills(); updateMesLabel(); render();
-}
-
-function updateMesLabel(){
-  const lbl=document.getElementById('mesDropLabel');
-  if(!lbl) return;
-  const m=filters.meses||[];
-  lbl.textContent = m.length===0 ? 'Todos los meses' : m.length===1 ? m[0] : `${m[0]} +${m.length-1}`;
-}
-
-function toggleMesPanel(e){
-  e.stopPropagation();
-  document.getElementById('mesDropPanel').classList.toggle('open');
-}
-document.addEventListener('click', ()=>{ const p=document.getElementById('mesDropPanel'); if(p) p.classList.remove('open'); });
 
 // ── SINGLE-SELECT FILTERS ──────────────────────────────────────────────────────
 ['filterFuente','filterBanco','filterTarjeta','filterMoneda','filterCuota'].forEach(id=>{
@@ -658,8 +602,7 @@ function resetFilters(){
   document.querySelectorAll('.pill').forEach(p=>{p.classList.toggle('active',p.dataset.val==='all');p.classList.remove('multi');});
   document.querySelectorAll('.cb-persona').forEach(c=>c.checked=false);
   const cbAll=document.getElementById('cbAll');if(cbAll)cbAll.checked=true;
-  filters.meses=[];
-  buildMesPanel(); buildMesSidebarPills(); updateMesLabel();
+  const drop=document.getElementById('mesDrop');if(drop)drop.value='all';
   render();
 }
 
@@ -685,7 +628,7 @@ function getFiltered(){
     if(filters.moneda==='usd'&&(d.usd||0)<=0) return false;
     if(filters.cuota==='contado'&&d.cuota!=='') return false;
     if(filters.cuota==='cuota'&&d.cuota==='') return false;
-    if((filters.meses||[]).length>0&&!(filters.meses).includes(fmtMes(d.mes_resumen))) return false;
+    if(filters.mes!=='all'&&fmtMes(d.mes_resumen)!==filters.mes) return false;
     if(search&&!d.descripcion.toLowerCase().includes(search)&&!d.persona.toLowerCase().includes(search)&&!d.categoria.toLowerCase().includes(search)) return false;
     return true;
   }).sort((a,b)=>{
