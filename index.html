@@ -40,8 +40,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .header h1{font-family:'Syne',sans-serif;font-weight:800;font-size:17px;letter-spacing:-.5px;}
 .header-sub{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);}
 .header-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
-.header-mes{display:flex;align-items:center;justify-content:center;}
-#mesDrop{background:var(--accent);color:#000;border:none;border-radius:20px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Mono',monospace;outline:none;appearance:none;-webkit-appearance:none;}
+.header-mes{display:flex;align-items:center;justify-content:center;position:relative;}
+#mesDropBtn{background:var(--accent);color:#000;border:none;border-radius:20px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Mono',monospace;outline:none;display:flex;align-items:center;gap:5px;}
+#mesDropBtn:hover{opacity:.85;}
+#mesDropPanel{display:none;position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:6px;min-width:130px;box-shadow:0 8px 24px rgba(0,0,0,.3);z-index:200;}
+#mesDropPanel.open{display:block;}
+.mes-cb-label{display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:6px;cursor:pointer;font-size:11px;font-family:'DM Mono',monospace;color:var(--text);transition:background .1s;white-space:nowrap;}
+.mes-cb-label:hover{background:var(--card);}
+.mes-cb-label input{accent-color:var(--accent);width:13px;height:13px;cursor:pointer;}
 .period-badge{background:var(--pill);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;}
 .hbtn{background:transparent;border:1px solid var(--border);border-radius:8px;padding:5px 12px;color:var(--muted);font-size:11px;cursor:pointer;font-family:'DM Mono',monospace;transition:all .15s;display:flex;align-items:center;gap:5px;}
 .hbtn:hover{border-color:var(--accent3);color:var(--accent3);}
@@ -250,7 +256,12 @@ body.light thead tr{background:#eaecf2;}
     <h1>💳 Gastos</h1>
     <span class="header-sub" id="headerSub">MARTIN ANDRES</span>
   </div>
-  <div class="header-mes"><select id="mesDrop" onchange="setMesFromDrop(this.value)"><option value="all">Todos</option></select></div>
+  <div class="header-mes">
+    <button id="mesDropBtn" onclick="toggleMesPanel(event)">
+      <span id="mesDropLabel">Todos los meses</span> ▾
+    </button>
+    <div id="mesDropPanel"></div>
+  </div>
   <div class="header-right">
     <span class="sync" id="syncStatus"></span>
     <button class="hbtn excel-btn" onclick="exportToExcel()" title="Descargar vista actual como Excel">⬇ Excel</button>
@@ -272,6 +283,14 @@ body.light thead tr{background:#eaecf2;}
         <div class="pill active" data-val="all">Todo</div>
         <div class="pill" data-val="tarjeta">Tarjetas</div>
         <div class="pill" data-val="banco">Cuenta</div>
+      </div>
+    </div>
+    <div>
+      <div class="filter-title">Movimiento</div>
+      <div class="pill-group" id="filterFlujo">
+        <div class="pill active" data-val="all">Todos</div>
+        <div class="pill" data-val="egreso">Egresos</div>
+        <div class="pill" data-val="ingreso">Ingresos</div>
       </div>
     </div>
     <div>
@@ -309,7 +328,7 @@ body.light thead tr{background:#eaecf2;}
         </label>
         <label class="cb-label"><input type="checkbox" class="cb-persona" value="MARTIN ANDRES" onchange="handleCb()"><span>Martin</span></label>
         <label class="cb-label"><input type="checkbox" class="cb-persona" value="FLOR YORIO" onchange="handleCb()"><span>Flor</span></label>
-        <label class="cb-label"><input type="checkbox" class="cb-persona" value="TOMAS ANDRES" onchange="handleCb()"><span>Tomy</span></label>
+        <label class="cb-label"><input type="checkbox" class="cb-persona" value="Tomy" onchange="handleCb()"><span>Tomy</span></label>
         <label class="cb-label"><input type="checkbox" class="cb-persona" value="Pili" onchange="handleCb()"><span>Pili</span></label>
         <label class="cb-label cb-info" title="Solo informativo — no incluida en Todas"><input type="checkbox" class="cb-persona" value="ANA ANDRES" onchange="handleCb()"><span>Anita <span style="font-size:9px;opacity:.5">ℹ</span></span></label>
         <label class="cb-label cb-info" title="Solo informativo — no incluida en Todas"><input type="checkbox" class="cb-persona" value="MAMA" onchange="handleCb()"><span>Mamá <span style="font-size:9px;opacity:.5">ℹ</span></span></label>
@@ -485,7 +504,7 @@ function toggleSidebar() {
 
 // ── STATE ──────────────────────────────────────────────────────────────────────
 let DATA = [];
-let filters = { fuente:'all', banco:'all', tarjeta:'all', personas:[], cat:'all', moneda:'all', cuota:'all', mes:'all' };
+let filters = { fuente:'all', banco:'all', tarjeta:'all', personas:[], cat:'all', moneda:'all', cuota:'all', mes:'all', meses:[], flujo:'all' };
 let search = '', sortField = 'fecha', sortDir = -1, currentView = 'detalle';
 
 // ── LOAD DATA ──────────────────────────────────────────────────────────────────
@@ -537,37 +556,82 @@ function buildCategoryFilter(){
   });
 }
 
+let ALL_MESES = [];
+
 function buildMesFilter(){
   const MORD=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  const all=[...new Set(DATA.map(d=>fmtMes(d.mes_resumen)).filter(Boolean))].sort((a,b)=>{
+  ALL_MESES=[...new Set(DATA.map(d=>fmtMes(d.mes_resumen)).filter(Boolean))].sort((a,b)=>{
     const [ma,ya]=a.split('-'),[mb,yb]=b.split('-');
     return(parseInt(ya)-parseInt(yb))||(MORD.indexOf(ma)-MORD.indexOf(mb));
   });
-  // Populate dropdown
-  const drop=document.getElementById('mesDrop');
-  drop.innerHTML='<option value="all">Todos</option>'+all.map(m=>`<option value="${m}"${filters.mes===m?' selected':''}>${m}</option>`).join('');
-  // Populate sidebar pills
+  buildMesPanel();
+  buildMesSidebarPills();
+  updateMesLabel();
+}
+
+function buildMesPanel(){
+  const panel=document.getElementById('mesDropPanel');
+  if(!panel) return;
+  const meses = filters.meses || [];
+  panel.innerHTML = `
+    <label class="mes-cb-label">
+      <input type="checkbox" id="cbMesAll" ${meses.length===0?'checked':''} onchange="handleMesAll(this)"> Todos
+    </label>
+    <div style="border-top:1px solid var(--border);margin:4px 0"></div>
+    ${ALL_MESES.map(m=>`
+      <label class="mes-cb-label">
+        <input type="checkbox" class="cb-mes" value="${m}" ${meses.includes(m)?'checked':''} onchange="handleMesCb()"> ${m}
+      </label>`).join('')}`;
+}
+
+function buildMesSidebarPills(){
+  const meses = filters.meses || [];
   mesGroup.innerHTML='';
-  ['all',...all].forEach(mes=>{
+  ['all',...ALL_MESES].forEach(mes=>{
     const p=document.createElement('div');
-    p.className='pill'+(filters.mes===mes?' active':'');
+    const isActive = mes==='all' ? meses.length===0 : meses.includes(mes);
+    p.className='pill'+(isActive?' active':'');
     p.dataset.val=mes; p.textContent=mes==='all'?'Todos':mes;
-    p.onclick=()=>setMesFromDrop(mes);
+    p.onclick=()=>{
+      if(mes==='all'){ filters.meses=[]; }
+      else {
+        const idx=filters.meses.indexOf(mes);
+        if(idx>=0) filters.meses.splice(idx,1); else filters.meses.push(mes);
+      }
+      buildMesPanel(); buildMesSidebarPills(); updateMesLabel(); render();
+    };
     mesGroup.appendChild(p);
   });
 }
 
-function setMesFromDrop(mes){
-  filters.mes=mes;
-  const drop=document.getElementById('mesDrop');
-  if(drop) drop.value=mes;
-  mesGroup.querySelectorAll('.pill').forEach(x=>x.classList.toggle('active',x.dataset.val===mes));
-  render();
+function handleMesAll(cb){
+  if(cb.checked){ filters.meses=[]; buildMesPanel(); buildMesSidebarPills(); updateMesLabel(); render(); }
+  else cb.checked=true;
 }
 
+function handleMesCb(){
+  const checked=[...document.querySelectorAll('.cb-mes:checked')].map(c=>c.value);
+  filters.meses=checked;
+  document.getElementById('cbMesAll').checked=checked.length===0;
+  buildMesSidebarPills(); updateMesLabel(); render();
+}
+
+function updateMesLabel(){
+  const lbl=document.getElementById('mesDropLabel');
+  if(!lbl) return;
+  const m=filters.meses||[];
+  lbl.textContent = m.length===0 ? 'Todos los meses' : m.length===1 ? m[0] : `${m[0]} +${m.length-1}`;
+}
+
+function toggleMesPanel(e){
+  e.stopPropagation();
+  document.getElementById('mesDropPanel').classList.toggle('open');
+}
+document.addEventListener('click', ()=>{ const p=document.getElementById('mesDropPanel'); if(p) p.classList.remove('open'); });
+
 // ── SINGLE-SELECT FILTERS ──────────────────────────────────────────────────────
-['filterFuente','filterBanco','filterTarjeta','filterMoneda','filterCuota'].forEach(id=>{
-  const KEY={filterFuente:'fuente',filterBanco:'banco',filterTarjeta:'tarjeta',filterMoneda:'moneda',filterCuota:'cuota'};
+['filterFuente','filterBanco','filterTarjeta','filterMoneda','filterCuota','filterFlujo'].forEach(id=>{
+  const KEY={filterFuente:'fuente',filterBanco:'banco',filterTarjeta:'tarjeta',filterMoneda:'moneda',filterCuota:'cuota',filterFlujo:'flujo'};
   document.getElementById(id).querySelectorAll('.pill').forEach(p=>{
     p.onclick=()=>{filters[KEY[id]]=p.dataset.val;document.getElementById(id).querySelectorAll('.pill').forEach(x=>x.classList.toggle('active',x.dataset.val===p.dataset.val));render();};
   });
@@ -597,12 +661,13 @@ function handleCb() {
 document.getElementById('searchBox').addEventListener('input',e=>{search=e.target.value.toLowerCase();render();});
 
 function resetFilters(){
-  filters={fuente:'all',banco:'all',tarjeta:'all',personas:[],cat:'all',moneda:'all',cuota:'all',mes:'all'};
+  filters={fuente:'all',banco:'all',tarjeta:'all',personas:[],cat:'all',moneda:'all',cuota:'all',mes:'all',meses:[],flujo:'all'};
   search='';document.getElementById('searchBox').value='';
   document.querySelectorAll('.pill').forEach(p=>{p.classList.toggle('active',p.dataset.val==='all');p.classList.remove('multi');});
   document.querySelectorAll('.cb-persona').forEach(c=>c.checked=false);
   const cbAll=document.getElementById('cbAll');if(cbAll)cbAll.checked=true;
-  const drop=document.getElementById('mesDrop');if(drop)drop.value='all';
+  filters.meses=[];
+  buildMesPanel(); buildMesSidebarPills(); updateMesLabel();
   render();
 }
 
@@ -628,7 +693,9 @@ function getFiltered(){
     if(filters.moneda==='usd'&&(d.usd||0)<=0) return false;
     if(filters.cuota==='contado'&&d.cuota!=='') return false;
     if(filters.cuota==='cuota'&&d.cuota==='') return false;
-    if(filters.mes!=='all'&&fmtMes(d.mes_resumen)!==filters.mes) return false;
+    if((filters.meses||[]).length>0&&!(filters.meses).includes(fmtMes(d.mes_resumen))) return false;
+    if(filters.flujo==='egreso'&&(d.credito||0)>0&&(d.pesos||0)===0&&(d.usd||0)===0) return false;
+    if(filters.flujo==='ingreso'&&(d.credito||0)===0) return false;
     if(search&&!d.descripcion.toLowerCase().includes(search)&&!d.persona.toLowerCase().includes(search)&&!d.categoria.toLowerCase().includes(search)) return false;
     return true;
   }).sort((a,b)=>{
@@ -654,7 +721,11 @@ function fmtMes(val){
 }
 const fmtP=v=>'$ '+v.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtU=v=>'USD '+v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-const fmtShort=v=>v>=1000000?'$'+(v/1000000).toFixed(2)+'M':v>=1000?'$'+(v/1000).toFixed(0)+'K':'$'+v.toFixed(0);
+const fmtShort=v=>{
+  const neg=v<0, abs=Math.abs(v);
+  const s=abs>=1000000?'$'+(abs/1000000).toFixed(1)+'M':abs>=1000?'$'+(abs/1000).toFixed(1)+'K':'$'+abs.toFixed(0);
+  return neg?'-'+s:s;
+};
 function catClass(cat){return 'cat-'+(cat||'').replace('/','').replace(/ /g,'');}
 
 // ── RENDER ─────────────────────────────────────────────────────────────────────
@@ -784,7 +855,7 @@ function getChartDefaults(){
 function renderCharts(filtered){
   const theme=getChartDefaults();
   const MORD=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  const PNOMBRE={'MARTIN ANDRES':'Martin','FLOR YORIO':'Flor','TOMAS ANDRES':'Tomy','Pili':'Pili','ANA ANDRES':'Anita','MAMA':'Mamá'};
+  const PNOMBRE={'MARTIN ANDRES':'Martin','FLOR YORIO':'Flor','Tomy':'Tomy','Pili':'Pili','ANA ANDRES':'Anita','MAMA':'Mamá'};
   const chartFont={family:"'DM Sans', sans-serif",size:11};
   const pluginLegend={labels:{color:theme.textColor,font:chartFont,padding:12,boxWidth:12}};
 
@@ -805,7 +876,7 @@ function renderCharts(filtered){
     return(parseInt(ya)-parseInt(yb))||(MORD.indexOf(ma)-MORD.indexOf(mb));
   });
   const personasEvo=[...new Set(evoSource.map(d=>d.persona))].filter(p=>p!=='ANA ANDRES'&&p!=='MAMA');
-  const PERS_COLORS={'MARTIN ANDRES':'#4f8ef7','FLOR YORIO':'#f5a623','TOMAS ANDRES':'#2dd4a0','Pili':'#b39ddb'};
+  const PERS_COLORS={'MARTIN ANDRES':'#4f8ef7','FLOR YORIO':'#f5a623','Tomy':'#2dd4a0','Pili':'#b39ddb'};
   // Dataset total
   const totalPorMes=mesesEvo.map(mes=>evoSource.filter(d=>fmtMes(d.mes_resumen)===mes).reduce((s,d)=>s+(d.pesos||0)-(d.credito||0),0));
   const datasets=[{
@@ -933,7 +1004,7 @@ function exportToExcel() {
   XLSX.utils.book_append_sheet(wb, wsCat, 'Por Categoría');
 
   // ── Hoja 3: Por Persona ──────────────────────────────────────────────────────
-  const PNOMBRE = {'MARTIN ANDRES':'Martin','FLOR YORIO':'Flor','TOMAS ANDRES':'Tomy','Pili':'Pili','ANA ANDRES':'Anita','MAMA':'Mamá'};
+  const PNOMBRE = {'MARTIN ANDRES':'Martin','FLOR YORIO':'Flor','Tomy':'Tomy','Pili':'Pili','ANA ANDRES':'Anita','MAMA':'Mamá'};
   const persMap = {};
   filtered.forEach(d => {
     const k = PNOMBRE[d.persona] || d.persona;
