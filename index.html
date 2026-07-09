@@ -310,7 +310,7 @@ body.light thead tr{background:#eaecf2;}
         <label class="cb-label"><input type="checkbox" class="cb-persona" value="MARTIN ANDRES" onchange="handleCb()"><span>Martin</span></label>
         <label class="cb-label"><input type="checkbox" class="cb-persona" value="FLOR YORIO" onchange="handleCb()"><span>Flor</span></label>
         <label class="cb-label"><input type="checkbox" class="cb-persona" value="TOMAS ANDRES" onchange="handleCb()"><span>Tomy</span></label>
-        <label class="cb-label"><input type="checkbox" class="cb-persona" value="MARIA DEL ANDRES" onchange="handleCb()"><span>Pili</span></label>
+        <label class="cb-label"><input type="checkbox" class="cb-persona" value="Pili" onchange="handleCb()"><span>Pili</span></label>
         <label class="cb-label cb-info" title="Solo informativo — no incluida en Todas"><input type="checkbox" class="cb-persona" value="ANA ANDRES" onchange="handleCb()"><span>Anita <span style="font-size:9px;opacity:.5">ℹ</span></span></label>
         <label class="cb-label cb-info" title="Solo informativo — no incluida en Todas"><input type="checkbox" class="cb-persona" value="MAMA" onchange="handleCb()"><span>Mamá <span style="font-size:9px;opacity:.5">ℹ</span></span></label>
       </div>
@@ -784,7 +784,7 @@ function getChartDefaults(){
 function renderCharts(filtered){
   const theme=getChartDefaults();
   const MORD=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  const PNOMBRE={'MARTIN ANDRES':'Martin','FLOR YORIO':'Flor','TOMAS ANDRES':'Tomy','MARIA DEL ANDRES':'Pili','ANA ANDRES':'Anita','MAMA':'Mamá'};
+  const PNOMBRE={'MARTIN ANDRES':'Martin','FLOR YORIO':'Flor','TOMAS ANDRES':'Tomy','Pili':'Pili','ANA ANDRES':'Anita','MAMA':'Mamá'};
   const chartFont={family:"'DM Sans', sans-serif",size:11};
   const pluginLegend={labels:{color:theme.textColor,font:chartFont,padding:12,boxWidth:12}};
 
@@ -805,7 +805,7 @@ function renderCharts(filtered){
     return(parseInt(ya)-parseInt(yb))||(MORD.indexOf(ma)-MORD.indexOf(mb));
   });
   const personasEvo=[...new Set(evoSource.map(d=>d.persona))].filter(p=>p!=='ANA ANDRES'&&p!=='MAMA');
-  const PERS_COLORS={'MARTIN ANDRES':'#4f8ef7','FLOR YORIO':'#f5a623','TOMAS ANDRES':'#2dd4a0','MARIA DEL ANDRES':'#b39ddb'};
+  const PERS_COLORS={'MARTIN ANDRES':'#4f8ef7','FLOR YORIO':'#f5a623','TOMAS ANDRES':'#2dd4a0','Pili':'#b39ddb'};
   // Dataset total
   const totalPorMes=mesesEvo.map(mes=>evoSource.filter(d=>fmtMes(d.mes_resumen)===mes).reduce((s,d)=>s+(d.pesos||0)-(d.credito||0),0));
   const datasets=[{
@@ -933,7 +933,7 @@ function exportToExcel() {
   XLSX.utils.book_append_sheet(wb, wsCat, 'Por Categoría');
 
   // ── Hoja 3: Por Persona ──────────────────────────────────────────────────────
-  const PNOMBRE = {'MARTIN ANDRES':'Martin','FLOR YORIO':'Flor','TOMAS ANDRES':'Tomy','MARIA DEL ANDRES':'Pili','ANA ANDRES':'Anita','MAMA':'Mamá'};
+  const PNOMBRE = {'MARTIN ANDRES':'Martin','FLOR YORIO':'Flor','TOMAS ANDRES':'Tomy','Pili':'Pili','ANA ANDRES':'Anita','MAMA':'Mamá'};
   const persMap = {};
   filtered.forEach(d => {
     const k = PNOMBRE[d.persona] || d.persona;
