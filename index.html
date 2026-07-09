@@ -504,6 +504,8 @@ function toggleSidebar() {
 
 // ── STATE ──────────────────────────────────────────────────────────────────────
 let DATA = [];
+const PNOMBRE_MAP = {'MARTIN ANDRES':'Martin','FLOR YORIO':'Flor','Tomy':'Tomy','Pili':'Pili','ANA ANDRES':'Anita','MAMA':'Mamá'};
+function pNombre(p){ return PNOMBRE_MAP[p] || (p||'').split(' ')[0]; }
 let filters = { fuente:'all', banco:'all', tarjeta:'all', personas:[], cat:'all', moneda:'all', cuota:'all', mes:'all', meses:[], flujo:'all' };
 let search = '', sortField = 'fecha', sortDir = -1, currentView = 'detalle';
 
@@ -797,7 +799,7 @@ const dotCls=isBank?'bank-cuenta':(bk==='Galicia'?'bank-galicia':bk==='BNA'?'ban
     const usdCell=d.usd?`<span class="amount-usd">${fmtU(d.usd)}</span>`:'';
     return `<tr class="${isBank?'bank-row':''}">
       <td style="white-space:nowrap"><span class="bank-dot ${dotCls}"></span>${d.tarjeta}</td>
-      <td>${(d.persona||'').split(' ')[0]}</td>
+      <td>${pNombre(d.persona)}</td>
       <td style="font-family:'DM Mono',monospace;font-size:10px;color:var(--accent);font-weight:600">${fmtMes(d.mes_resumen)}</td>
       <td style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text);opacity:.7;white-space:nowrap">${d.fecha}</td>
       <td>${d.descripcion}</td>
@@ -855,7 +857,7 @@ function getChartDefaults(){
 function renderCharts(filtered){
   const theme=getChartDefaults();
   const MORD=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  const PNOMBRE={'MARTIN ANDRES':'Martin','FLOR YORIO':'Flor','Tomy':'Tomy','Pili':'Pili','ANA ANDRES':'Anita','MAMA':'Mamá'};
+  const PNOMBRE=PNOMBRE_MAP;
   const chartFont={family:"'DM Sans', sans-serif",size:11};
   const pluginLegend={labels:{color:theme.textColor,font:chartFont,padding:12,boxWidth:12}};
 
@@ -886,7 +888,7 @@ function renderCharts(filtered){
   personasEvo.forEach(p=>{
     const porMes=mesesEvo.map(mes=>evoSource.filter(d=>fmtMes(d.mes_resumen)===mes&&d.persona===p).reduce((s,d)=>s+(d.pesos||0)-(d.credito||0),0));
     if(porMes.some(v=>v>0)) datasets.push({
-      label:PNOMBRE[p]||p,data:porMes,borderColor:PERS_COLORS[p]||'#aaa',
+      label:pNombre(p),data:porMes,borderColor:PERS_COLORS[p]||'#aaa',
       backgroundColor:'transparent',tension:.35,borderWidth:2,pointRadius:3,pointHoverRadius:5,fill:false
     });
   });
@@ -948,7 +950,7 @@ function renderCharts(filtered){
   });
 
   const persMap={};
-  filtered.forEach(d=>{const p=PNOMBRE[d.persona]||(d.persona||'').split(' ')[0];persMap[p]=(persMap[p]||0)+(d.pesos||0)-(d.credito||0);});
+  filtered.forEach(d=>{const p=pNombre(d.persona);persMap[p]=(persMap[p]||0)+(d.pesos||0)-(d.credito||0);});
   const persSorted=Object.entries(persMap).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
   destroyChart('persona');
   chartInstances['persona']=new Chart(document.getElementById('chartPersona').getContext('2d'),{
@@ -1004,7 +1006,7 @@ function exportToExcel() {
   XLSX.utils.book_append_sheet(wb, wsCat, 'Por Categoría');
 
   // ── Hoja 3: Por Persona ──────────────────────────────────────────────────────
-  const PNOMBRE = {'MARTIN ANDRES':'Martin','FLOR YORIO':'Flor','Tomy':'Tomy','Pili':'Pili','ANA ANDRES':'Anita','MAMA':'Mamá'};
+  const PNOMBRE=PNOMBRE_MAP;
   const persMap = {};
   filtered.forEach(d => {
     const k = PNOMBRE[d.persona] || d.persona;
