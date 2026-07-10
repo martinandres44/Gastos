@@ -518,7 +518,8 @@ async function loadData(isRefresh=false) {
     const json=await(await fetch(API_URL)).json();
     if(!json.ok) throw new Error(json.error||'Error');
     DATA=[...(json.cards||[]),...(json.bank||[])];
-    if(json.cats&&json.cats.length) ALL_CATS=json.cats;
+    if(json.cats&&json.cats.length) SHEET_CATS=json.cats;
+    syncAllCats();
     const meses=[...new Set(DATA.map(d=>fmtMes(d.mes_resumen)).filter(Boolean))];
     const pb=document.getElementById('periodBadge');if(pb)pb.textContent=meses.join(' · ')||'—';
     document.getElementById('headerSub').textContent=`MARTIN ANDRES · ${(json.cards||[]).length} tarjeta · ${(json.bank||[]).length} cuenta`;
@@ -1068,9 +1069,11 @@ const BASE_CATS = ["Auto","Combustible","Deporte/Club","Delivery","Educación","
   "Seguros","Servicios","Servicios digitales","Shopping/Ropa","Sueldo","Suscripciones",
   "Supermercado","Telefonía/Internet","Transporte","Varios","Viajes","Vuelos"];
 
+let SHEET_CATS = [];
+
 function loadCustomCats(){ try{ return JSON.parse(localStorage.getItem(CUSTOM_CATS_KEY)||'[]'); }catch(e){ return []; } }
 function saveCustomCats(cats){ localStorage.setItem(CUSTOM_CATS_KEY, JSON.stringify(cats)); }
-function getAllCats(){ return [...new Set([...BASE_CATS, ...loadCustomCats()])].sort(); }
+function getAllCats(){ return [...new Set([...BASE_CATS, ...SHEET_CATS, ...loadCustomCats()])].sort(); }
 
 // Sincronizar ALL_CATS con custom cats al arrancar
 function syncAllCats(){
@@ -1138,7 +1141,7 @@ function renderCatChips(){
   const all = getAllCats();
   const container = document.getElementById('catChips');
   container.innerHTML = all.map(c => {
-    const isBase = BASE_CATS.includes(c);
+    const isBase = BASE_CATS.includes(c) || SHEET_CATS.includes(c);
     return `<span class="cat-chip${isBase?' base':''}">
       ${c}
       ${!isBase ? `<button class="cat-chip-del" onclick="removeCustomCat('${c.replace(/'/g,"\\'")}')" title="Eliminar">✕</button>` : ''}
