@@ -518,6 +518,7 @@ async function loadData(isRefresh=false) {
     const json=await(await fetch(API_URL)).json();
     if(!json.ok) throw new Error(json.error||'Error');
     DATA=[...(json.cards||[]),...(json.bank||[])];
+    if(json.cats&&json.cats.length) ALL_CATS=json.cats;
     const meses=[...new Set(DATA.map(d=>fmtMes(d.mes_resumen)).filter(Boolean))];
     const pb=document.getElementById('periodBadge');if(pb)pb.textContent=meses.join(' · ')||'—';
     document.getElementById('headerSub').textContent=`MARTIN ANDRES · ${(json.cards||[]).length} tarjeta · ${(json.bank||[]).length} cuenta`;
@@ -757,11 +758,11 @@ function render(){
 }
 
 // ── CATEGORY DROPDOWN ──────────────────────────────────────────────────────────
-const ALL_CATS=["Auto","Combustible","Deporte/Club","Delivery","Educación","Electrónica","Entretenimiento","Expensas","Familia","Farmacia/Salud","Gastronomía","Hogar","Hotel","Impuestos","Intereses","Inversión","Personal doméstico","Profesional","Reintegro","Seguros","Servicios","Servicios digitales","Shopping/Ropa","Sueldo","Suscripciones","Supermercado","Telefonía/Internet","Transporte","Varios","Viajes","Vuelos"];
+let ALL_CATS = ["Alquiler Autos", "Auto", "Combustible", "Delivery", "Deporte/Club", "Educación", "Electrónica", "Entretenimiento", "Estacionamiento", "Eventos Deportivos", "Expensas", "Familia", "Farmacia/Salud", "Gastronomía", "Hogar", "Hotel", "Impuestos", "Intereses", "Inversión", "Patente", "Peajes", "Personal doméstico", "Profesional", "Recitales", "Reintegro", "Seguros", "Servicios", "Servicios digitales", "Shopping/Ropa", "Sueldo", "Supermercado", "Suscripciones", "Telefonía/Internet", "Transporte", "Varios", "Viajes", "Vuelos"];
 const dropdown=document.getElementById('catDropdown');
 let activeRowRef=null;
 function buildDropdown(){
-  dropdown.innerHTML=ALL_CATS.map(c=>`<div class="tag ${catClass(c)} dd-item" data-cat="${c}" style="display:block;padding:6px 11px;border-radius:6px;cursor:pointer;margin:2px 0;font-size:11px;font-weight:600;">${c}</div>`).join('');
+  dropdown.innerHTML=(ALL_CATS||[]).map(c=>`<div class="tag ${catClass(c)} dd-item" data-cat="${c}" style="display:block;padding:6px 11px;border-radius:6px;cursor:pointer;margin:2px 0;font-size:11px;font-weight:600;">${c}</div>`).join('');
   dropdown.querySelectorAll('.dd-item').forEach(item=>{
     item.addEventListener('mouseenter',()=>item.style.opacity='.75');
     item.addEventListener('mouseleave',()=>item.style.opacity='1');
