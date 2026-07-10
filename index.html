@@ -817,7 +817,8 @@ function renderSummary(rows,viewId,groupKey){
   const groups={};
   rows.forEach(d=>{const k=d[groupKey]||'(sin cat.)';groups[k]=groups[k]||{pesos:0,usd:0,cred:0,n:0};groups[k].pesos+=d.pesos||0;groups[k].usd+=d.usd||0;groups[k].cred+=d.credito||0;groups[k].n++;});
   const maxP=Math.max(...Object.values(groups).map(g=>g.pesos),1);
-  el.querySelector('.summary-grid').innerHTML=Object.entries(groups).sort((a,b)=>b[1].pesos-a[1].pesos).map(([key,v])=>`
+  const sortKey = filters.moneda==='usd' ? 'usd' : 'pesos';
+  el.querySelector('.summary-grid').innerHTML=Object.entries(groups).sort((a,b)=>b[1][sortKey]-a[1][sortKey]).map(([key,v])=>`
     <div class="summary-card">
       <div class="sc-header"><div class="sc-title">${key}</div><div class="sc-count">${v.n} ops</div></div>
       <div class="sc-row"><span class="sc-label">Débito / Pesos</span><span class="sc-val amount-pesos">${fmtP(v.pesos)}</span></div>
@@ -834,7 +835,8 @@ function renderSummaryTarjeta(rows){
   const maxP=Math.max(...Object.values(groups).map(g=>g.pesos),1);
   const dc=v=>v.source==='banco'?'bank-cuenta':(v.banco==='Galicia'?'bank-galicia':(v.banco&&v.banco.includes('BNA'))?'bank-bna':'bank-bbva');
   const col=v=>v.source==='banco'?'var(--accent3)':(v.banco==='Galicia'?'var(--galicia)':(v.banco&&v.banco.includes('BNA'))?'var(--bna)':'var(--accent2)');
-  el.querySelector('.summary-grid').innerHTML=Object.entries(groups).sort((a,b)=>b[1].pesos-a[1].pesos).map(([key,v])=>`
+  const sortKey = filters.moneda==='usd' ? 'usd' : 'pesos';
+  el.querySelector('.summary-grid').innerHTML=Object.entries(groups).sort((a,b)=>b[1][sortKey]-a[1][sortKey]).map(([key,v])=>`
     <div class="summary-card">
       <div class="sc-header"><div class="sc-title" style="display:flex;align-items:center;gap:7px"><span class="bank-dot ${dc(v)}" style="width:9px;height:9px"></span>${key}</div><div class="sc-count">${v.n} ops</div></div>
       <div class="sc-row"><span class="sc-label">Banco</span><span class="sc-val" style="color:${col(v)}">${v.banco}</span></div>
