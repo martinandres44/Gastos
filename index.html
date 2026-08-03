@@ -945,7 +945,7 @@ function renderCharts(filtered){
   const tarjMap={};
   filtered.forEach(d=>{const k=d.tarjeta||'Otros';tarjMap[k]=(tarjMap[k]||0)+(d.pesos||0)-(d.credito||0);});
   const tarjEntries=Object.entries(tarjMap).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
-  const tarjColors=tarjEntries.map(([k])=>k.includes('Galicia')||k==='Cuenta'?'#ff6b35':k.includes('BBVA')?'#4f8ef7':(k.includes('BNA')||k==='MC BNA'||k==='MC Nativa BNA')?'#009b77':k.includes('ICBC')?'#e63946':k.includes('Mercado Pago')?'#00b1ea':'#2dd4a0');
+  const tarjColors=tarjEntries.map(([k])=>k.includes('Galicia')||k==='Cuenta'?'#ff6b35':k.includes('BBVA')?'#4f8ef7':(k.includes('BNA')||k==='MC BNA'||k==='MC BNA')?'#009b77':k.includes('ICBC')?'#e63946':k.includes('Mercado Pago')?'#00b1ea':'#2dd4a0');
   destroyChart('tarjeta_chart');
   chartInstances['tarjeta_chart']=new Chart(document.getElementById('chartTarjeta').getContext('2d'),{
     type:'bar',
