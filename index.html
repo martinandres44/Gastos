@@ -254,7 +254,7 @@ body.light thead tr{background:#eaecf2;}
   <div class="header-left">
     <button class="sidebar-toggle" onclick="toggleSidebar()" title="Filtros">☰</button>
     <h1>💳 Gastos</h1>
-    <span class="header-sub" id="headerSub">MARTIN ANDRES</span>
+    <span class="header-sub" id="headerSub">Martin Andres</span>
   </div>
   <div class="header-mes">
     <button id="mesDropBtn" onclick="toggleMesPanel(event)">
@@ -314,7 +314,7 @@ body.light thead tr{background:#eaecf2;}
         <div class="pill" data-val="Visa BBVA">Visa BBVA</div>
         <div class="pill" data-val="MC BBVA">MC BBVA</div>
         <div class="pill" data-val="Cta. Bancaria">Cuenta</div>
-        <div class="pill" data-val="MC BNA">MC BNA</div>
+        <div class="pill" data-val="MC Nativa BNA">MC BNA</div>
         <div class="pill" data-val="Visa ICBC">Visa ICBC</div>
         <div class="pill" data-val="MC Mercado Pago">MC MP</div>
       </div>
@@ -326,12 +326,12 @@ body.light thead tr{background:#eaecf2;}
           <input type="checkbox" id="cbAll" checked onchange="handleCbAll(this)">
           <span>Todas</span>
         </label>
-        <label class="cb-label"><input type="checkbox" class="cb-persona" value="MARTIN ANDRES" onchange="handleCb()"><span>Martin</span></label>
-        <label class="cb-label"><input type="checkbox" class="cb-persona" value="FLOR YORIO" onchange="handleCb()"><span>Flor</span></label>
+        <label class="cb-label"><input type="checkbox" class="cb-persona" value="Martin Andres" onchange="handleCb()"><span>Martin</span></label>
+        <label class="cb-label"><input type="checkbox" class="cb-persona" value="Flor" onchange="handleCb()"><span>Flor</span></label>
         <label class="cb-label"><input type="checkbox" class="cb-persona" value="Tomy" onchange="handleCb()"><span>Tomy</span></label>
         <label class="cb-label"><input type="checkbox" class="cb-persona" value="Pili" onchange="handleCb()"><span>Pili</span></label>
-        <label class="cb-label cb-info" title="Solo informativo — no incluida en Todas"><input type="checkbox" class="cb-persona" value="ANA ANDRES" onchange="handleCb()"><span>Anita <span style="font-size:9px;opacity:.5">ℹ</span></span></label>
-        <label class="cb-label cb-info" title="Solo informativo — no incluida en Todas"><input type="checkbox" class="cb-persona" value="MAMA" onchange="handleCb()"><span>Mamá <span style="font-size:9px;opacity:.5">ℹ</span></span></label>
+        <label class="cb-label cb-info" title="Solo informativo — no incluida en Todas"><input type="checkbox" class="cb-persona" value="Anita" onchange="handleCb()"><span>Anita <span style="font-size:9px;opacity:.5">ℹ</span></span></label>
+        <label class="cb-label"><input type="checkbox" class="cb-persona" value="Mama" onchange="handleCb()"><span>Mamá</span></label>
       </div>
     </div>
     <div>
@@ -504,7 +504,7 @@ function toggleSidebar() {
 
 // ── STATE ──────────────────────────────────────────────────────────────────────
 let DATA = [];
-const PNOMBRE_MAP = {'MARTIN ANDRES':'Martin','FLOR YORIO':'Flor','Tomy':'Tomy','Pili':'Pili','ANA ANDRES':'Anita','MAMA':'Mamá'};
+const PNOMBRE_MAP = {'Martin Andres':'Martin','MARTIN ANDRES':'Martin','Flor':'Flor','FLOR YORIO':'Flor','Tomy':'Tomy','Pili':'Pili','Anita':'Anita','ANA ANDRES':'Anita','Mama':'Mamá','MAMA':'Mamá'};
 function pNombre(p){ return PNOMBRE_MAP[p] || (p||'').split(' ')[0]; }
 let filters = { fuente:'all', banco:'all', tarjeta:'all', personas:[], cat:'all', moneda:'all', cuota:'all', mes:'all', meses:[], flujo:'all' };
 let search = '', sortField = 'fecha', sortDir = -1, currentView = 'detalle';
@@ -518,11 +518,10 @@ async function loadData(isRefresh=false) {
     const json=await(await fetch(API_URL)).json();
     if(!json.ok) throw new Error(json.error||'Error');
     DATA=[...(json.cards||[]),...(json.bank||[])];
-    if(json.cats&&json.cats.length) SHEET_CATS=json.cats;
-    syncAllCats();
+    if(json.cats&&json.cats.length) ALL_CATS=json.cats;
     const meses=[...new Set(DATA.map(d=>fmtMes(d.mes_resumen)).filter(Boolean))];
     const pb=document.getElementById('periodBadge');if(pb)pb.textContent=meses.join(' · ')||'—';
-    document.getElementById('headerSub').textContent=`MARTIN ANDRES · ${(json.cards||[]).length} tarjeta · ${(json.bank||[]).length} cuenta`;
+    document.getElementById('headerSub').textContent=`Martin Andres · ${(json.cards||[]).length} tarjeta · ${(json.bank||[]).length} cuenta`;
     applyRulesToData(); buildCategoryFilter(); buildMesFilter(); render();
     if(isRefresh){setSyncStatus('✓ Actualizado','saved');setTimeout(()=>setSyncStatus('',''),3000);}
     else{loading.classList.add('hidden');setTimeout(()=>{loading.style.display='none';app.style.display='block';},350);}
@@ -690,7 +689,7 @@ function getFiltered(){
     if(filters.banco!=='all'&&dBanco!==filters.banco) return false;
     if(filters.tarjeta!=='all'&&d.tarjeta!==filters.tarjeta) return false;
     // Ana excluded when no explicit persona selected — must click Ana pill to see her
-    if(filters.personas.length===0&&(d.persona==='ANA ANDRES'||d.persona==='MAMA')) return false;
+    if(filters.personas.length===0&&(['Anita','ANA ANDRES'].includes(d.persona))) return false;
     if(filters.personas.length>0&&!filters.personas.includes(d.persona)) return false;
     if(filters.cat!=='all'&&d.categoria!==filters.cat) return false;
     if(filters.moneda==='pesos'&&(d.pesos||0)<=0) return false;
@@ -872,7 +871,7 @@ function renderCharts(filtered){
     const dBanco=d.banco&&d.banco.includes('BNA')?'BNA':d.banco;
     if(filters.banco!=='all'&&dBanco!==filters.banco) return false;
     if(filters.tarjeta!=='all'&&d.tarjeta!==filters.tarjeta) return false;
-    if(filters.personas.length===0&&(d.persona==='ANA ANDRES'||d.persona==='MAMA')) return false;
+    if(filters.personas.length===0&&(['Anita','ANA ANDRES'].includes(d.persona))) return false;
     if(filters.personas.length>0&&!filters.personas.includes(d.persona)) return false;
     if(filters.cat!=='all'&&d.categoria!==filters.cat) return false;
     return true;
@@ -882,7 +881,7 @@ function renderCharts(filtered){
     return(parseInt(ya)-parseInt(yb))||(MORD.indexOf(ma)-MORD.indexOf(mb));
   });
   const personasEvo=[...new Set(evoSource.map(d=>d.persona))].filter(p=>p!=='ANA ANDRES'&&p!=='MAMA');
-  const PERS_COLORS={'MARTIN ANDRES':'#4f8ef7','FLOR YORIO':'#f5a623','Tomy':'#2dd4a0','Pili':'#b39ddb'};
+  const PERS_COLORS={'Martin Andres':'#4f8ef7','MARTIN ANDRES':'#4f8ef7','Flor':'#f5a623','FLOR YORIO':'#f5a623','Tomy':'#2dd4a0','Pili':'#b39ddb','Anita':'#f48fb1','ANA ANDRES':'#f48fb1','Mama':'#ce93d8','MAMA':'#ce93d8'};
   // Dataset total
   const totalPorMes=mesesEvo.map(mes=>evoSource.filter(d=>fmtMes(d.mes_resumen)===mes).reduce((s,d)=>s+(d.pesos||0)-(d.credito||0),0));
   const datasets=[{
@@ -945,7 +944,7 @@ function renderCharts(filtered){
   const tarjMap={};
   filtered.forEach(d=>{const k=d.tarjeta||'Otros';tarjMap[k]=(tarjMap[k]||0)+(d.pesos||0)-(d.credito||0);});
   const tarjEntries=Object.entries(tarjMap).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
-  const tarjColors=tarjEntries.map(([k])=>k.includes('Galicia')||k==='Cuenta'?'#ff6b35':k.includes('BBVA')?'#4f8ef7':(k.includes('BNA')||k==='MC BNA'||k==='MC BNA')?'#009b77':k.includes('ICBC')?'#e63946':k.includes('Mercado Pago')?'#00b1ea':'#2dd4a0');
+  const tarjColors=tarjEntries.map(([k])=>k.includes('Galicia')||k==='Cuenta'?'#ff6b35':k.includes('BBVA')?'#4f8ef7':(k.includes('BNA')||k==='MC BNA'||k==='MC Nativa BNA')?'#009b77':k.includes('ICBC')?'#e63946':k.includes('Mercado Pago')?'#00b1ea':'#2dd4a0');
   destroyChart('tarjeta_chart');
   chartInstances['tarjeta_chart']=new Chart(document.getElementById('chartTarjeta').getContext('2d'),{
     type:'bar',
@@ -1069,11 +1068,9 @@ const BASE_CATS = ["Auto","Combustible","Deporte/Club","Delivery","Educación","
   "Seguros","Servicios","Servicios digitales","Shopping/Ropa","Sueldo","Suscripciones",
   "Supermercado","Telefonía/Internet","Transporte","Varios","Viajes","Vuelos"];
 
-let SHEET_CATS = [];
-
 function loadCustomCats(){ try{ return JSON.parse(localStorage.getItem(CUSTOM_CATS_KEY)||'[]'); }catch(e){ return []; } }
 function saveCustomCats(cats){ localStorage.setItem(CUSTOM_CATS_KEY, JSON.stringify(cats)); }
-function getAllCats(){ return [...new Set([...BASE_CATS, ...SHEET_CATS, ...loadCustomCats()])].sort(); }
+function getAllCats(){ return [...new Set([...BASE_CATS, ...loadCustomCats()])].sort(); }
 
 // Sincronizar ALL_CATS con custom cats al arrancar
 function syncAllCats(){
@@ -1141,7 +1138,7 @@ function renderCatChips(){
   const all = getAllCats();
   const container = document.getElementById('catChips');
   container.innerHTML = all.map(c => {
-    const isBase = BASE_CATS.includes(c) || SHEET_CATS.includes(c);
+    const isBase = BASE_CATS.includes(c);
     return `<span class="cat-chip${isBase?' base':''}">
       ${c}
       ${!isBase ? `<button class="cat-chip-del" onclick="removeCustomCat('${c.replace(/'/g,"\\'")}')" title="Eliminar">✕</button>` : ''}
