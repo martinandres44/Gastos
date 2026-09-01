@@ -332,6 +332,7 @@ body.light thead tr{background:#eaecf2;}
         <label class="cb-label"><input type="checkbox" class="cb-persona" value="Pili" onchange="handleCb()"><span>Pili</span></label>
         <label class="cb-label cb-info" title="Solo informativo — no incluida en Todas"><input type="checkbox" class="cb-persona" value="Anita" onchange="handleCb()"><span>Anita <span style="font-size:9px;opacity:.5">ℹ</span></span></label>
         <label class="cb-label"><input type="checkbox" class="cb-persona" value="Mama" onchange="handleCb()"><span>Mamá</span></label>
+        <label class="cb-label"><input type="checkbox" class="cb-persona" value="Bauti" onchange="handleCb()"><span>Bauti</span></label>
       </div>
     </div>
     <div>
@@ -504,7 +505,7 @@ function toggleSidebar() {
 
 // ── STATE ──────────────────────────────────────────────────────────────────────
 let DATA = [];
-const PNOMBRE_MAP = {'Martin Andres':'Martin','MARTIN ANDRES':'Martin','Flor':'Flor','FLOR YORIO':'Flor','Tomy':'Tomy','Pili':'Pili','Anita':'Anita','ANA ANDRES':'Anita','Mama':'Mamá','MAMA':'Mamá'};
+const PNOMBRE_MAP = {'Martin Andres':'Martin','MARTIN ANDRES':'Martin','Flor':'Flor','FLOR YORIO':'Flor','Tomy':'Tomy','Pili':'Pili','Anita':'Anita','ANA ANDRES':'Anita','Mama':'Mamá','MAMA':'Mamá','Bauti':'Bauti'};
 function pNombre(p){ return PNOMBRE_MAP[p] || (p||'').split(' ')[0]; }
 let filters = { fuente:'all', banco:'all', tarjeta:'all', personas:[], cat:'all', moneda:'all', cuota:'all', mes:'all', meses:[], flujo:'all' };
 let search = '', sortField = 'fecha', sortDir = -1, currentView = 'detalle';
@@ -522,7 +523,13 @@ async function loadData(isRefresh=false) {
     const meses=[...new Set(DATA.map(d=>fmtMes(d.mes_resumen)).filter(Boolean))];
     const pb=document.getElementById('periodBadge');if(pb)pb.textContent=meses.join(' · ')||'—';
     document.getElementById('headerSub').textContent=`Martin Andres · ${(json.cards||[]).length} tarjeta · ${(json.bank||[]).length} cuenta`;
-    applyRulesToData(); buildCategoryFilter(); buildMesFilter(); render();
+    applyRulesToData(); buildCategoryFilter(); buildMesFilter();
+    // Auto-select last month on first load
+    if(ALL_MESES.length>0 && (filters.meses||[]).length===0) {
+      filters.meses=[ALL_MESES[ALL_MESES.length-1]];
+      buildMesPanel(); buildMesSidebarPills(); updateMesLabel();
+    }
+    render();
     if(isRefresh){setSyncStatus('✓ Actualizado','saved');setTimeout(()=>setSyncStatus('',''),3000);}
     else{loading.classList.add('hidden');setTimeout(()=>{loading.style.display='none';app.style.display='block';},350);}
   } catch(err) {
@@ -693,12 +700,12 @@ function getFiltered(){
     if(filters.personas.length>0&&!filters.personas.includes(d.persona)) return false;
     if(filters.cat!=='all'&&d.categoria!==filters.cat) return false;
     if(filters.moneda==='pesos'&&(d.pesos||0)<=0) return false;
-    if(filters.moneda==='usd'&&(d.usd||0)<=0) return false;
+    if(filters.moneda==='usd'&&(d.usd||0)<=0&&(d.credito_usd||0)<=0) return false;
     if(filters.cuota==='contado'&&d.cuota!=='') return false;
     if(filters.cuota==='cuota'&&d.cuota==='') return false;
     if((filters.meses||[]).length>0&&!(filters.meses).includes(fmtMes(d.mes_resumen))) return false;
-    if(filters.flujo==='egreso'&&(d.credito||0)>0&&(d.pesos||0)===0&&(d.usd||0)===0) return false;
-    if(filters.flujo==='ingreso'&&(d.credito||0)===0) return false;
+    if(filters.flujo==='egreso'&&((d.credito||0)>0||(d.credito_usd||0)>0)&&(d.pesos||0)===0&&(d.usd||0)===0) return false;
+    if(filters.flujo==='ingreso'&&(d.credito||0)===0&&(d.credito_usd||0)===0) return false;
     if(search&&!d.descripcion.toLowerCase().includes(search)&&!d.persona.toLowerCase().includes(search)&&!d.categoria.toLowerCase().includes(search)) return false;
     return true;
   }).sort((a,b)=>{
@@ -735,7 +742,7 @@ function catClass(cat){return 'cat-'+(cat||'').replace('/','').replace(/ /g,'');
 function render(){
   const filtered=getFiltered();
   const totalP=filtered.reduce((s,d)=>s+(d.pesos||0)-(d.credito||0),0);
-  const totalU=filtered.reduce((s,d)=>s+(d.usd||0),0);
+  const totalU=filtered.reduce((s,d)=>s+(d.usd||0)-(d.credito_usd||0),0);
   const totalCred=filtered.reduce((s,d)=>s+(d.credito||0),0);
   document.getElementById('kpiPesos').textContent=fmtShort(totalP);
   document.getElementById('kpiUsd').textContent=totalU?fmtU(totalU):'—';
@@ -797,7 +804,7 @@ const dotCls=isBank?'bank-cuenta':(bk==='Galicia'?'bank-galicia':bk==='BNA'?'ban
     const cuotaVal=d.cuota&&/\d+\/\d+/.test(d.cuota)?d.cuota:'';
     const debitCell=isBank&&d.debito?`<span class="amount-neg">${fmtP(d.debito)}</span>`:(!isBank&&d.pesos?`<span class="${d.pesos<0?'amount-neg':'amount-pesos'}">${fmtP(Math.abs(d.pesos))}</span>`:'');
     const creditCell=isBank&&d.credito?`<span class="amount-cred">${fmtP(d.credito)}</span>`:'';
-    const usdCell=d.usd?`<span class="amount-usd">${fmtU(d.usd)}</span>`:'';
+    const usdCell=d.usd?`<span class="amount-usd">${fmtU(d.usd)}</span>`:d.credito_usd?`<span class="amount-cred">${fmtU(d.credito_usd)}</span>`:'';
     return `<tr class="${isBank?'bank-row':''}">
       <td style="white-space:nowrap"><span class="bank-dot ${dotCls}"></span>${d.tarjeta}</td>
       <td>${pNombre(d.persona)}</td>
@@ -881,7 +888,7 @@ function renderCharts(filtered){
     return(parseInt(ya)-parseInt(yb))||(MORD.indexOf(ma)-MORD.indexOf(mb));
   });
   const personasEvo=[...new Set(evoSource.map(d=>d.persona))].filter(p=>p!=='ANA ANDRES'&&p!=='MAMA');
-  const PERS_COLORS={'Martin Andres':'#4f8ef7','MARTIN ANDRES':'#4f8ef7','Flor':'#f5a623','FLOR YORIO':'#f5a623','Tomy':'#2dd4a0','Pili':'#b39ddb','Anita':'#f48fb1','ANA ANDRES':'#f48fb1','Mama':'#ce93d8','MAMA':'#ce93d8'};
+  const PERS_COLORS={'Martin Andres':'#4f8ef7','MARTIN ANDRES':'#4f8ef7','Flor':'#f5a623','FLOR YORIO':'#f5a623','Tomy':'#2dd4a0','Pili':'#b39ddb','Anita':'#f48fb1','ANA ANDRES':'#f48fb1','Mama':'#ce93d8','MAMA':'#ce93d8','Bauti':'#4dd0e1'};
   // Dataset total
   const totalPorMes=mesesEvo.map(mes=>evoSource.filter(d=>fmtMes(d.mes_resumen)===mes).reduce((s,d)=>s+(d.pesos||0)-(d.credito||0),0));
   const datasets=[{
